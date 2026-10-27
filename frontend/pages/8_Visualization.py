@@ -108,15 +108,29 @@ with t_rel:
                 st.plotly_chart(ch.parallel_coordinates(df,[p for p in pc if p!=cc] or pc,cc),width='stretch',key='v_par')
     else:st.info('Need at least two numeric columns.')
 with t_mine:
-    cls,km,el,ru=st.session_state.get('classification'),st.session_state.get('kmeans'),st.session_state.get('elbow'),st.session_state.get('rules')
-    if not any([cls,km,el,ru is not None]):st.info('Run something on the Data Mining page first (classification, clustering or association rules).')
+    cls = st.session_state.get('classification')
+    km = st.session_state.get('kmeans_result') or st.session_state.get('kmeans')
+    el = st.session_state.get('elbow_result', {}).get('df') if isinstance(st.session_state.get('elbow_result'), dict) else st.session_state.get('elbow')
+    ru = st.session_state.get('rules')
+    if not any([cls, km is not None, el is not None, ru is not None and not ru.empty]):
+        st.info('Run something on the Data Mining page first (classification, clustering or association rules).')
     if cls:
-        st.subheader(f"Classification – {cls['algorithm']} → {cls['target']}");a,b=st.columns(2)
-        a.plotly_chart(ch.metrics_bar(cls['metrics']),width='stretch');b.plotly_chart(ch.confusion_heatmap(cls['metrics']['Confusion Matrix'],cls['classes']),width='stretch')
-        if cls.get('importances') is not None:st.plotly_chart(ch.importance_bar(cls['importances']),width='stretch')
-        if cls.get('tree_model') is not None:st.subheader('Decision tree');show_tree(cls,'viz')
-    if km:
-        st.subheader('Clustering');st.plotly_chart(ch.cluster_scatter(km[1],km[2]),width='stretch')
-    if el is not None:st.plotly_chart(ch.elbow_chart(el),width='stretch')
+        st.subheader(f"Classification – {cls['algorithm']} → {cls['target']}")
+        a, b = st.columns(2)
+        a.plotly_chart(ch.metrics_bar(cls['metrics']), use_container_width=True)
+        b.plotly_chart(ch.confusion_heatmap(cls['metrics']['Confusion Matrix'], cls['classes']), use_container_width=True)
+        if cls.get('importances') is not None:
+            st.plotly_chart(ch.importance_bar(cls['importances']), use_container_width=True)
+        if cls.get('tree_model') is not None:
+            st.subheader('Decision tree')
+            show_tree(cls, 'viz')
+    if km is not None:
+        st.subheader('Clustering (K-Means)')
+        p_mat = km['p'] if isinstance(km, dict) else km[1]
+        lab_vec = km['labels'] if isinstance(km, dict) else km[2]
+        st.plotly_chart(ch.cluster_scatter(p_mat, lab_vec), use_container_width=True)
+    if el is not None:
+        st.plotly_chart(ch.elbow_chart(el), use_container_width=True)
     if ru is not None and len(ru):
-        st.subheader('Association rules');st.plotly_chart(ch.rules_scatter(ru),width='stretch')
+        st.subheader('Association rules')
+        st.plotly_chart(ch.rules_scatter(ru), use_container_width=True)

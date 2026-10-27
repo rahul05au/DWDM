@@ -1,6 +1,15 @@
+import sys
+from pathlib import Path
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+_FRONTEND = Path(__file__).resolve().parent
+if str(_FRONTEND) not in sys.path:
+    sys.path.insert(0, str(_FRONTEND))
+
 import streamlit as st
-from utils.ui import load_css,hero,section,card,workflow
-st.set_page_config(page_title="Integrated DWDM System",page_icon="📊",layout="wide",initial_sidebar_state="expanded")
+from utils.ui import load_css, hero, section, card, workflow
+st.set_page_config(page_title="Integrated DWDM System", page_icon="📊", layout="wide", initial_sidebar_state="expanded")
 load_css()
 st.sidebar.markdown("## 📊 DWDM SYSTEM")
 st.sidebar.caption("Integrated Data Warehousing & Data Mining")

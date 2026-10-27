@@ -57,3 +57,58 @@ def test_full_association_pipeline():
     # 3. Export to Excel
     excel = excel_bytes({'Rules': comp['rules_fpgrowth'], 'Summary': comp['summary']})
     assert len(excel) > 0
+
+
+def test_etl_and_database_warehouse():
+    from backend.etl.etl import run as run_etl
+    from backend.database.database import get_engine, test_connection, read_table, table_row_count
+
+    # Test database connectivity
+    assert test_connection() is True
+
+    # Test ETL execution
+    sample_df = pd.DataFrame({
+        'Department': ['Sales', 'Engineering', 'Sales', 'HR'],
+        'Salary': [50000, 80000, 55000, 60000]
+    })
+    ex, tr, info = run_etl(sample_df, table="test_emp_warehouse", dataset_name="test_employees")
+    assert len(tr) == 4
+    assert info['table'] == "test_emp_warehouse"
+
+    # Verify table can be queried from SQLite
+    count = table_row_count("test_emp_warehouse")
+    assert count == 4
+    loaded_df = read_table("test_emp_warehouse")
+    assert len(loaded_df) == 4
+    assert 'Department' in loaded_df.columns
+
+
+def test_olap_operations():
+    from backend.olap.olap import slice_df, dice, rollup, pivot
+
+    df = pd.DataFrame({
+        'Region': ['East', 'East', 'West', 'West'],
+        'Category': ['Electronics', 'Furniture', 'Electronics', 'Furniture'],
+        'Revenue': [1000, 400, 1500, 600]
+    })
+
+    # 1. Slice
+    sliced = slice_df(df, 'Region', 'East')
+    assert len(sliced) == 2
+    assert (sliced['Region'] == 'East').all()
+
+    # 2. Dice
+    diced = dice(df, {'Region': ['East', 'West'], 'Category': ['Electronics']})
+    assert len(diced) == 2
+    assert (diced['Category'] == 'Electronics').all()
+
+    # 3. Rollup
+    rolled = rollup(df, ['Region', 'Category'], 'Revenue', 'sum')
+    assert 'level' in rolled.columns
+    assert len(rolled) > 0
+
+    # 4. Pivot
+    pivoted = pivot(df, index='Region', columns='Category', values='Revenue', agg='sum')
+    assert 'Electronics' in pivoted.columns
+    assert 'Furniture' in pivoted.columns
+
